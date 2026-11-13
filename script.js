@@ -33,6 +33,17 @@ document.addEventListener('DOMContentLoaded', () => {
     dropZone.classList.remove('border-blue-500');
     if (e.dataTransfer.files.length) processImageFile(e.dataTransfer.files[0]);
   });
+
+  // Pasang event listener langsung untuk tombol QR Generator agar selalu responsif
+  const btnOpenQr = document.getElementById('btnOpenQrModal');
+  const btnCloseQr = document.getElementById('btnCloseQrModal');
+  const btnGenQr = document.getElementById('btnGenerateQr');
+  const btnDlQr = document.getElementById('btnDownloadQr');
+
+  if (btnOpenQr) btnOpenQr.addEventListener('click', toggleQrModal);
+  if (btnCloseQr) btnCloseQr.addEventListener('click', toggleQrModal);
+  if (btnGenQr) btnGenQr.addEventListener('click', generateQrCode);
+  if (btnDlQr) btnDlQr.addEventListener('click', downloadQrCode);
 });
 
 // ========== PENGATURAN ==========
@@ -73,7 +84,12 @@ function toggleConfig() {
 }
 
 function toggleQrModal() {
-  document.getElementById('qrGeneratorModal').classList.toggle('hidden');
+  const modal = document.getElementById('qrGeneratorModal');
+  if (!modal) {
+    showToast('Elemen modal QR tidak ditemukan di index.html!', 'error');
+    return;
+  }
+  modal.classList.toggle('hidden');
 }
 
 function getCurrentLocationAsSchool() {
@@ -469,22 +485,33 @@ function generateQrCode() {
   // Bersihkan QR sebelumnya
   canvasBox.innerHTML = '';
 
-  // Buat QR Code baru menggunakan library QRCode.js
-  new QRCode(canvasBox, {
-    text: qrPayload,
-    width: 220,
-    height: 220,
-    colorDark: "#0f172a",
-    colorLight: "#ffffff",
-    correctLevel: QRCode.CorrectLevel.H
-  });
+  if (typeof QRCode !== 'undefined') {
+    // Buat QR Code menggunakan library QRCode.js
+    new QRCode(canvasBox, {
+      text: qrPayload,
+      width: 220,
+      height: 220,
+      colorDark: "#0f172a",
+      colorLight: "#ffffff",
+      correctLevel: QRCode.CorrectLevel.H
+    });
+  } else {
+    // Fallback otomatis ke API QR jika CDN terblokir
+    const fallbackImg = document.createElement('img');
+    fallbackImg.crossOrigin = 'anonymous';
+    fallbackImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(qrPayload)}`;
+    fallbackImg.alt = 'QR Code Absensi';
+    fallbackImg.width = 220;
+    fallbackImg.height = 220;
+    canvasBox.appendChild(fallbackImg);
+  }
 
   labelPreview.textContent = qrPayload;
   container.classList.remove('hidden');
   showToast('QR Code berhasil dibuat!');
 }
 
-function downloadQrCode() {
+async function downloadQrCode() {
   const canvas = document.querySelector('#qrcodeCanvas canvas');
   const img = document.querySelector('#qrcodeCanvas img');
   const nisn = document.getElementById('genNisn').value.trim();
@@ -493,21 +520,36 @@ function downloadQrCode() {
   const rawName = (nisn || nama || 'absensi').replace(/[^a-zA-Z0-9_-]/g, '_');
   const fileName = `QR_${rawName}.png`;
 
-  let dataUrl = '';
-  if (canvas) {
-    dataUrl = canvas.toDataURL('image/png');
-  } else if (img && img.src) {
-    dataUrl = img.src;
-  } else {
-    showToast('QR Code belum tersedia untuk diunduh.', 'error');
-    return;
-  }
+  try {
+    let dataUrl = '';
+    if (canvas) {
+      dataUrl = canvas.toDataURL('image/png');
+    } else if (img && img.src) {
+      if (img.src.startsWith('data:')) {
+        dataUrl = img.src;
+      } else {
+        const res = await fetch(img.src);
+        const blob = await res.blob();
+        dataUrl = URL.createObjectURL(blob);
+      }
+    } else {
+      showToast('QR Code belum tersedia untuk diunduh.', 'error');
+      return;
+    }
 
-  const link = document.createElement('a');
-  link.href = dataUrl;
-  link.download = fileName;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  showToast('Gambar QR berhasil diunduh!');
+    const link = document.createElement('a');
+    link.href = dataUrl;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('Gambar QR berhasil diunduh!');
+  } catch (err) {
+    showToast('Gagal mengunduh gambar QR.', 'error');
+  }
 }
+
+// Ekspos fungsi ke global window agar selalu bisa dipanggil dari HTML
+window.toggleQrModal = toggleQrModal;
+window.generateQrCode = generateQrCode;
+window.downloadQrCode = downloadQrCode;
