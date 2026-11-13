@@ -72,6 +72,10 @@ function toggleConfig() {
   document.getElementById('configModal').classList.toggle('hidden');
 }
 
+function toggleQrModal() {
+  document.getElementById('qrGeneratorModal').classList.toggle('hidden');
+}
+
 function getCurrentLocationAsSchool() {
   if (!currentPosition) {
     showToast('Lokasi belum tersedia. Izinkan akses lokasi dulu.', 'error');
@@ -443,4 +447,67 @@ function showToast(msg, type = 'success') {
   window.toastTimeout = setTimeout(() => {
     toast.classList.add('hidden');
   }, 3000);
+}
+
+// ========== QR CODE GENERATOR ==========
+function generateQrCode() {
+  const nisn = document.getElementById('genNisn').value.trim();
+  const nama = document.getElementById('genNama').value.trim();
+
+  if (!nisn && !nama) {
+    showToast('Isi minimal NISN atau Nama terlebih dahulu!', 'error');
+    return;
+  }
+
+  // Format data gabungan agar konsisten (contoh: 19862871|Budi Santoso)
+  const qrPayload = nisn && nama ? `${nisn}|${nama}` : (nisn || nama);
+
+  const container = document.getElementById('qrResultContainer');
+  const canvasBox = document.getElementById('qrcodeCanvas');
+  const labelPreview = document.getElementById('qrLabelPreview');
+
+  // Bersihkan QR sebelumnya
+  canvasBox.innerHTML = '';
+
+  // Buat QR Code baru menggunakan library QRCode.js
+  new QRCode(canvasBox, {
+    text: qrPayload,
+    width: 220,
+    height: 220,
+    colorDark: "#0f172a",
+    colorLight: "#ffffff",
+    correctLevel: QRCode.CorrectLevel.H
+  });
+
+  labelPreview.textContent = qrPayload;
+  container.classList.remove('hidden');
+  showToast('QR Code berhasil dibuat!');
+}
+
+function downloadQrCode() {
+  const canvas = document.querySelector('#qrcodeCanvas canvas');
+  const img = document.querySelector('#qrcodeCanvas img');
+  const nisn = document.getElementById('genNisn').value.trim();
+  const nama = document.getElementById('genNama').value.trim();
+  
+  const rawName = (nisn || nama || 'absensi').replace(/[^a-zA-Z0-9_-]/g, '_');
+  const fileName = `QR_${rawName}.png`;
+
+  let dataUrl = '';
+  if (canvas) {
+    dataUrl = canvas.toDataURL('image/png');
+  } else if (img && img.src) {
+    dataUrl = img.src;
+  } else {
+    showToast('QR Code belum tersedia untuk diunduh.', 'error');
+    return;
+  }
+
+  const link = document.createElement('a');
+  link.href = dataUrl;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  showToast('Gambar QR berhasil diunduh!');
 }
