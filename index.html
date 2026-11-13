@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Absensi QR Sekolah</title>
+  
+  <!-- Library Eksternal -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <!-- Menghubungkan ke file CSS terpisah -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="text-white">
+  <div class="max-w-lg mx-auto px-4 py-6 min-h-screen flex flex-col">
+    
+    <!-- Header -->
+    <header class="text-center mb-6">
+      <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 mb-3 shadow-lg">
+        <i class="fas fa-qrcode text-2xl"></i>
+      </div>
+      <h1 class="text-2xl font-extrabold tracking-tight">Absensi QR</h1>
+      <p class="text-slate-400 text-sm mt-1" id="schoolName">SMA Negeri 4 Madiun</p>
+    </header>
+
+    <!-- GPS Status -->
+    <div id="gpsCard" class="glass rounded-2xl p-4 mb-5 transition-all duration-300">
+      <div class="flex items-center gap-3">
+        <div id="gpsIcon" class="w-12 h-12 rounded-xl bg-slate-700 flex items-center justify-center">
+          <i class="fas fa-location-dot text-xl text-slate-400"></i>
+        </div>
+        <div class="flex-1">
+          <p class="font-semibold text-sm" id="gpsTitle">Mengecek lokasi...</p>
+          <p class="text-xs text-slate-400 mt-0.5" id="gpsDetail">Mohon izinkan akses lokasi</p>
+        </div>
+        <div id="gpsBadge" class="hidden px-2.5 py-1 rounded-full text-xs font-bold"></div>
+      </div>
+      <div id="gpsAccuracy" class="mt-3 text-xs text-slate-500 hidden"></div>
+    </div>
+
+    <!-- Main -->
+    <div id="mainContent" class="flex-1">
+      
+      <!-- Warning luar sekolah -->
+      <div id="outOfSchoolWarning" class="hidden glass rounded-2xl p-5 mb-5 border border-red-500/30 glow-red">
+        <div class="flex items-start gap-3">
+          <div class="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center flex-shrink-0">
+            <i class="fas fa-ban text-red-400"></i>
+          </div>
+          <div>
+            <p class="font-bold text-red-400">Lokasi Tidak Valid</p>
+            <p class="text-sm text-slate-300 mt-1">Anda berada di luar area sekolah. Absensi hanya bisa dilakukan di dalam radius sekolah.</p>
+            <p class="text-xs text-slate-500 mt-2" id="distanceInfo"></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scanner -->
+      <div id="scannerSection" class="hidden">
+        <div class="flex gap-2 mb-4 p-1 glass rounded-xl">
+          <button onclick="switchTab('camera')" id="tabCamera" class="tab-active flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all">
+            <i class="fas fa-camera mr-1.5"></i> Kamera
+          </button>
+          <button onclick="switchTab('upload')" id="tabUpload" class="flex-1 py-2.5 rounded-lg text-sm font-semibold text-slate-400 transition-all hover:text-white">
+            <i class="fas fa-image mr-1.5"></i> Upload Gambar
+          </button>
+        </div>
+
+        <!-- Camera -->
+        <div id="cameraPanel" class="glass rounded-2xl p-4 mb-4">
+          <div id="reader" class="w-full overflow-hidden rounded-xl"></div>
+          <p class="text-center text-xs text-slate-400 mt-3">Arahkan kamera ke QR Code absensi</p>
+        </div>
+
+        <!-- Upload -->
+        <div id="uploadPanel" class="hidden glass rounded-2xl p-5 mb-4">
+          <div class="border-2 border-dashed border-slate-600 rounded-xl p-8 text-center hover:border-blue-500 transition-colors cursor-pointer" id="dropZone">
+            <i class="fas fa-cloud-arrow-up text-4xl text-slate-500 mb-3"></i>
+            <p class="font-semibold text-sm">Kirim / Upload Gambar QR</p>
+            <p class="text-xs text-slate-400 mt-1">Bisa dari galeri atau hasil kiriman teman</p>
+            <input type="file" id="qrFileInput" accept="image/*" class="hidden" />
+            <button type="button" onclick="document.getElementById('qrFileInput').click()" class="mt-4 px-5 py-2.5 bg-blue-600 hover:bg-blue-500 rounded-xl text-sm font-semibold transition-colors">
+              Pilih Gambar
+            </button>
+          </div>
+          <div id="uploadPreview" class="hidden mt-4">
+            <img id="previewImg" alt="Preview QR" class="w-full rounded-xl max-h-64 object-contain bg-slate-900" />
+            <p id="uploadStatus" class="text-center text-sm mt-3 text-slate-400"></p>
+          </div>
+          <!-- Elemen tersembunyi khusus untuk memindai file gambar -->
+          <div id="fileReaderTemp" class="hidden"></div>
+        </div>
+      </div>
+
+      <!-- Result -->
+      <div id="resultCard" class="hidden glass rounded-2xl p-5 mb-4 success-animation">
+        <div class="text-center">
+          <div id="resultIcon" class="w-16 h-16 rounded-full mx-auto flex items-center justify-center mb-3"></div>
+          <h3 id="resultTitle" class="font-bold text-lg"></h3>
+          <p id="resultMessage" class="text-sm text-slate-300 mt-1"></p>
+          <div id="resultDetails" class="mt-4 text-left space-y-2 text-sm bg-slate-900/50 p-4 rounded-xl border border-slate-700/50"></div>
+          <button onclick="resetScanner()" class="mt-5 w-full py-3 bg-slate-700 hover:bg-slate-600 rounded-xl font-semibold text-sm transition-colors">
+            Absen Lagi
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="mt-auto pt-4 text-center">
+      <p class="text-xs text-slate-500">
+        <i class="fas fa-shield-halved mr-1"></i>
+        Dilindungi GPS • Data tersimpan otomatis
+      </p>
+      <button onclick="toggleConfig()" class="mt-2 text-xs text-slate-600 hover:text-slate-400 transition-colors">
+        <i class="fas fa-gear mr-1"></i> Pengaturan
+      </button>
+    </footer>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 hidden px-4 py-2.5 rounded-xl text-sm font-semibold shadow-lg transition-all duration-300"></div>
+
+  <!-- Config Modal -->
+  <div id="configModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-4">
+    <div class="glass rounded-2xl w-full max-w-md p-5 max-h-[85vh] overflow-y-auto bg-slate-900/95">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="font-bold text-lg">Pengaturan Admin</h2>
+        <button onclick="toggleConfig()" class="w-8 h-8 rounded-lg bg-slate-700 flex items-center justify-center">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <div class="space-y-4 text-sm">
+        <div>
+          <label class="block text-slate-400 mb-1.5">Nama Sekolah</label>
+          <input type="text" id="cfgSchoolName" class="w-full bg-slate-800 border border-slate-600 rounded-xl px-4 py-2.5 focus:outline-none focus:border-blue-500" />
+        </div>
+        
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-400 mb-1.5">Latitude Sekolah</label>
+            <input type="number" step="any" id="cfgLat" class="w-full bg-slate-800 border border-slate-600 rounded-xl px-4 py-2.5 focus:outline-none focus:border-blue-500" />
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1.5">Longitude Sekolah</label>
+            <input type="number" step="any" id="cfgLng" class="w-full bg-slate-800 border border-slate-600 rounded-xl px-4 py-2.5 focus:outline-none focus:border-blue-500" />
+          </div>
+        </div>
+        
+        <div>
+          <label class="block text-slate-400 mb-1.5">Radius (meter)</label>
+          <input type="number" id="cfgRadius" class="w-full bg-slate-800 border border-slate-600 rounded-xl px-4 py-2.5 focus:outline-none focus:border-blue-500" />
+        </div>
+        
+        <div>
+          <label class="block text-slate-400 mb-1.5">URL Google Apps Script</label>
+          <input type="url" id="cfgScriptUrl" placeholder="https://script.google.com/macros/s/..../exec" class="w-full bg-slate-800 border border-slate-600 rounded-xl px-4 py-2.5 focus:outline-none focus:border-blue-500 text-xs" />
+        </div>
+
+        <div class="bg-slate-800/50 rounded-xl p-3 border border-slate-700">
+          <p class="text-xs font-semibold text-blue-400 mb-2"><i class="fas fa-info-circle mr-1"></i> Cara dapatkan koordinat sekolah:</p>
+          <ol class="text-xs text-slate-400 space-y-1 list-decimal list-inside">
+            <li>Buka Google Maps di lokasi sekolah</li>
+            <li>Klik kanan → salin koordinat</li>
+            <li>Tempel di kolom Latitude & Longitude</li>
+          </ol>
+        </div>
+
+        <button onclick="saveConfig()" class="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 rounded-xl font-bold transition-all">
+          Simpan Pengaturan
+        </button>
+        
+        <button onclick="getCurrentLocationAsSchool()" class="w-full py-2.5 bg-slate-700 hover:bg-slate-600 rounded-xl font-semibold text-sm transition-colors">
+          <i class="fas fa-crosshairs mr-1.5"></i> Gunakan Lokasi Saat Ini sebagai Sekolah
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Menghubungkan ke file JavaScript terpisah -->
+  <script src="script.js"></script>
+</body>
+</html>
