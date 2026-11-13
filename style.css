@@ -55,3 +55,22 @@ transform: scale(1);
 opacity: 1;
 }
 }
+/* ... existing code ... */
+@keyframes scaleIn {
+from {
+transform: scale(0.8);
+opacity: 0;
+}
+to {
+transform: scale(1);
+opacity: 1;
+}
+}
+
+/* Penyesuaian tampilan hasil QR Generator */
+#qrcodeCanvas img,
+#qrcodeCanvas canvas {
+margin: 0 auto;
+display: block;
+border-radius: 6px;
+}
