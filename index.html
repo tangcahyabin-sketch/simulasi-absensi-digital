@@ -8,7 +8,6 @@
   <!-- Library Eksternal -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
 
   <!-- Menghubungkan ke file CSS terpisah -->
@@ -60,12 +59,15 @@
 
       <!-- Scanner -->
       <div id="scannerSection" class="hidden">
-        <div class="flex gap-2 mb-4 p-1 glass rounded-xl">
-          <button onclick="switchTab('camera')" id="tabCamera" class="tab-active flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all">
-            <i class="fas fa-camera mr-1.5"></i> Kamera
+        <div class="flex gap-1.5 mb-4 p-1 glass rounded-xl">
+          <button onclick="switchTab('camera')" id="tabCamera" class="tab-active flex-1 py-2.5 rounded-lg text-xs sm:text-sm font-semibold transition-all">
+            <i class="fas fa-camera mr-1"></i> Kamera
           </button>
-          <button onclick="switchTab('upload')" id="tabUpload" class="flex-1 py-2.5 rounded-lg text-sm font-semibold text-slate-400 transition-all hover:text-white">
-            <i class="fas fa-image mr-1.5"></i> Upload Gambar
+          <button onclick="switchTab('upload')" id="tabUpload" class="flex-1 py-2.5 rounded-lg text-xs sm:text-sm font-semibold text-slate-400 transition-all hover:text-white">
+            <i class="fas fa-image mr-1"></i> Upload QR
+          </button>
+          <button onclick="switchTab('generator')" id="tabGenerator" class="flex-1 py-2.5 rounded-lg text-xs sm:text-sm font-semibold text-slate-400 transition-all hover:text-white">
+            <i class="fas fa-qrcode mr-1"></i> Buat QR
           </button>
         </div>
 
@@ -92,6 +94,36 @@
           </div>
           <!-- Elemen tersembunyi khusus untuk memindai file gambar -->
           <div id="fileReaderTemp" class="hidden"></div>
+        </div>
+
+        <!-- Tab Buat QR Code (Langsung di Halaman Utama) -->
+        <div id="generatorPanel" class="hidden glass rounded-2xl p-5 mb-4">
+          <h3 class="font-bold text-base mb-1"><i class="fas fa-qrcode text-blue-400 mr-1.5"></i>Buat QR Code Absensi</h3>
+          <p class="text-xs text-slate-400 mb-4">Masukkan data siswa untuk membuat dan mengunduh QR Code</p>
+          
+          <div class="space-y-3 text-sm">
+            <div>
+              <label class="block text-slate-400 text-xs mb-1">NISN / ID Siswa</label>
+              <input type="text" id="inlineNisn" placeholder="Contoh: 19862871" class="w-full bg-slate-800 border border-slate-600 rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-blue-500" />
+            </div>
+            <div>
+              <label class="block text-slate-400 text-xs mb-1">Nama Lengkap / Kelas</label>
+              <input type="text" id="inlineNama" placeholder="Contoh: Budi Santoso - XII IPA 1" class="w-full bg-slate-800 border border-slate-600 rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-blue-500" />
+            </div>
+            <button type="button" onclick="generateQrFromTab()" class="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 rounded-xl font-bold transition-all shadow-lg">
+              <i class="fas fa-wand-magic-sparkles mr-1.5"></i> Generate QR Code
+            </button>
+          </div>
+
+          <div id="inlineQrResult" class="hidden mt-5 pt-4 border-t border-slate-700/60 text-center">
+            <div class="bg-white p-4 rounded-2xl inline-block mx-auto shadow-xl">
+              <div id="inlineQrBox"></div>
+            </div>
+            <p id="inlineQrLabel" class="text-xs font-mono text-slate-300 mt-3 break-all bg-slate-800/80 py-2 px-3 rounded-lg border border-slate-700"></p>
+            <button type="button" onclick="downloadQrFromTab()" class="mt-3 w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 rounded-xl font-semibold text-sm transition-colors flex items-center justify-center gap-2">
+              <i class="fas fa-download"></i> Download QR Code (PNG)
+            </button>
+          </div>
         </div>
       </div>
 
