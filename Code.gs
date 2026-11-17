@@ -3,6 +3,7 @@
  * Pasang kode ini di Google Apps Script yang terhubung ke Google Sheets.
  */
 
+const SPREADSHEET_ID = "1Y0tnHXG_ZTcPGCrrwRCr_RjaIA0fNa-yzwTEhL-OSVA";
 const SHEET_NAME = "Absensi";
 const DEFAULT_SCHOOL = "SMA Negeri 4 Madiun";
 const HEADERS = [
@@ -43,10 +44,7 @@ function doPost(e) {
 
     lock.waitLock(15000);
 
-    const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-    if (!spreadsheet) {
-      throw new Error("Spreadsheet tidak ditemukan. Hubungkan Apps Script ke Google Sheets.");
-    }
+    const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
 
     let sheet = spreadsheet.getSheetByName(SHEET_NAME);
     if (!sheet) sheet = spreadsheet.insertSheet(SHEET_NAME);
