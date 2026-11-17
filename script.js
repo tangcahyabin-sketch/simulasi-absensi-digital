@@ -76,8 +76,31 @@ function applyConfig() {
   document.getElementById('cfgScriptUrl').value = config.scriptUrl;
 }
 
+// Kata sandi sederhana untuk membuka pengaturan guru.
+// Catatan: karena berada di JavaScript sisi browser, kata sandi ini
+// dapat ditemukan oleh orang yang memeriksa kode sumber website.
+const CONFIG_PASSWORD = "smapajaya4";
+
 function toggleConfig() {
-  document.getElementById('configModal').classList.toggle('hidden');
+  const modal = document.getElementById('configModal');
+  if (!modal) return;
+
+  // Jika modal sedang tertutup, minta kata sandi sebelum membukanya.
+  if (modal.classList.contains('hidden')) {
+    const password = window.prompt('Masukkan kata sandi guru untuk membuka Pengaturan:');
+    if (password === null) return; // Pengguna menekan Batal.
+
+    if (password !== CONFIG_PASSWORD) {
+      showToast('Kata sandi salah. Pengaturan tidak dapat dibuka.', 'error');
+      return;
+    }
+
+    modal.classList.remove('hidden');
+    return;
+  }
+
+  // Jika modal sedang terbuka, tutup kembali.
+  modal.classList.add('hidden');
 }
 
 function toggleQrModal() {
