@@ -380,43 +380,42 @@ async function onScanSuccess(decodedText) {
     return;
   }
 
-  // Kirim data ke Google Apps Script
+  // Kirim data ke Google Apps Script.
+  // mode: 'no-cors' dipakai karena Web App Apps Script sering tidak
+  // mengirim header CORS yang dibutuhkan browser untuk membaca respons.
+  // Karena respons menjadi opaque, browser tidak dapat memastikan isi balasan.
   try {
-    const response = await fetch(config.scriptUrl, {
+    await fetch(config.scriptUrl, {
       method: 'POST',
+      mode: 'no-cors',
       redirect: 'follow',
       headers: {
         'Content-Type': 'text/plain;charset=utf-8'
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
+      cache: 'no-store'
     });
 
-    const result = await response.json();
-
-    if (result.status === 'success') {
-      showResult(
-        true,
-        'Absensi Berhasil!',
-        'Data kehadiran Anda telah tersimpan ke Google Sheets.',
-        [
-          { label: 'Data QR', value: decodedText },
-          { label: 'Waktu', value: timestamp },
-          { label: 'Lokasi', value: config.schoolName },
-          { label: 'Status Server', value: result.message || 'Tersimpan' }
-        ]
-      );
-    } else {
-      throw new Error(result.message || 'Server menolak data');
-    }
+    showResult(
+      true,
+      'Permintaan Absensi Dikirim',
+      'Permintaan sudah dikirim ke Google Apps Script. Browser tidak dapat membaca balasan server karena pembatasan CORS. Mohon pastikan data muncul di Google Sheets.',
+      [
+        { label: 'Data QR', value: decodedText },
+        { label: 'Waktu', value: timestamp },
+        { label: 'Lokasi', value: config.schoolName },
+        { label: 'Status', value: 'Terkirim — perlu verifikasi di Google Sheets' }
+      ]
+    );
   } catch (error) {
     showResult(
       false,
       'Gagal Mengirim',
-      'Server Google Sheets menolak atau tidak dapat dihubungi.',
+      'Browser tidak dapat menghubungi Google Apps Script. Periksa koneksi internet dan URL Web App.',
       [
         { label: 'Data QR', value: decodedText },
-        { label: 'Error', value: error.message },
-        { label: 'Cek Ulang', value: 'Pastikan Deploy Apps Script diatur ke akses: Siapa saja (Anyone)' }
+        { label: 'Error', value: error.message || 'Network error' },
+        { label: 'Cek Ulang', value: 'Pastikan URL Web App benar, deployment aktif, dan akses diatur sesuai kebutuhan.' }
       ]
     );
   } finally {
